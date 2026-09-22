@@ -10,6 +10,10 @@ Reusable GitHub Actions maintained by [Anton Ustinoff](https://github.com/ziqq).
   guarded semantic lifecycle transitions to issues, pull requests, and
   discussions without hard-coding visible label names.
 
+The [design research](docs/RESEARCH.md) records the comparable actions that
+were reviewed, their useful ideas, the gaps for this project, and the
+hardening decisions implemented here.
+
 Consumers should pin an immutable full commit SHA. Version tags are provided
 for discovery, but a full SHA gives the strongest supply-chain boundary.
 
