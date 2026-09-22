@@ -57,6 +57,7 @@ test('buildConfiguration keeps templates inside the workspace and needs no targe
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'notify-test-'));
   fs.writeFileSync(path.join(workspace, 'message.md.tmpl'), 'Hello {{name}}\n');
   const config = notify.buildConfiguration({
+    GITHUB_REF_NAME: 'v1.2.3',
     GITHUB_WORKSPACE: workspace,
     INPUT_MODE: 'validate',
     INPUT_PROVIDERS: 'discord,telegram',
@@ -66,6 +67,7 @@ test('buildConfiguration keeps templates inside the workspace and needs no targe
   assert.deepEqual(config.providers, ['discord', 'telegram']);
   assert.equal(config.discord.webhooks.length, 0);
   assert.equal(config.telegram.targets.length, 0);
+  assert.equal(config.values.github.ref_name, 'v1.2.3');
 
   assert.throws(() => notify.buildConfiguration({
     GITHUB_WORKSPACE: workspace,

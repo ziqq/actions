@@ -69,7 +69,7 @@ Built-in values are deliberately limited to:
 
 - `github.repository`, `github.actor`, `github.event_name`;
 - `github.run_number`, `github.run_id`, `github.run_url`;
-- `github.ref`, `github.sha`, `github.server_url`;
+- `github.ref`, `github.ref_name`, `github.sha`, `github.server_url`;
 - `github.workflow`, `github.job`, and optional `qr_url`.
 
 The action never exposes all environment variables to a template.

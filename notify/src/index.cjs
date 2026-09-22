@@ -541,6 +541,7 @@ function buildValues(env, variables, qrUrl) {
       event_name: env.GITHUB_EVENT_NAME || '',
       job: env.GITHUB_JOB || '',
       ref: env.GITHUB_REF || '',
+      ref_name: env.GITHUB_REF_NAME || '',
       repository,
       run_id: runId,
       run_number: env.GITHUB_RUN_NUMBER || '',
