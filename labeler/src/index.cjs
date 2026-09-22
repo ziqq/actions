@@ -153,19 +153,23 @@ function validateReleaseSelector(rawSelector, name, labels) {
   return { all, any, not, state };
 }
 
-function validateCommentEvent(rawEvent, name, transitions) {
+function validateCommentEvent(rawEvent, name, transitions, labels) {
   const event = requireObject(rawEvent, `events.${name}`);
   requireString(event.transition, `events.${name}.transition`);
   if (!transitions.has(event.transition)) fail(`event "${name}" references unknown transition.`);
   const allowedActors = requireStringArray(event.allowedActors, `events.${name}.allowedActors`);
+  const requireLabels = requireStringArray(event.requireLabels, `events.${name}.requireLabels`, []);
+  for (const labelId of requireLabels) {
+    if (!labels.has(labelId)) fail(`event "${name}" references unknown required label ID "${labelId}".`);
+  }
   const validActors = name === 'discussionCommented'
     ? new Set(['discussion-author'])
     : new Set(['assignee', 'issue-author']);
   for (const actor of allowedActors) {
     if (!validActors.has(actor)) fail(`event "${name}" contains unsupported actor "${actor}".`);
   }
-  validateUnknownKeys(event, `events.${name}`, ['allowedActors', 'transition']);
-  return { ...event, allowedActors };
+  validateUnknownKeys(event, `events.${name}`, ['allowedActors', 'requireLabels', 'transition']);
+  return { ...event, allowedActors, requireLabels };
 }
 
 function validateLabelEvents(rawEvents, transitions, labels) {
@@ -204,7 +208,7 @@ function validateEvents(rawEvents, transitions, labels) {
       continue;
     }
     if (name === 'issueCommented' || name === 'discussionCommented') {
-      events.set(name, validateCommentEvent(rawEvent, name, transitions));
+      events.set(name, validateCommentEvent(rawEvent, name, transitions, labels));
       continue;
     }
     const event = requireObject(rawEvent, `events.${name}`);
@@ -947,8 +951,17 @@ function discussionCommentAllowed(context, event) {
   return event.allowedActors.includes('discussion-author') && login === author;
 }
 
+async function commentTargetHasRequiredLabels(client, context, event, loaded, descriptor) {
+  if (event.requireLabels.length === 0) return true;
+  const target = descriptor.kind === 'discussion'
+    ? await fetchDiscussionTarget(client, context, descriptor.number)
+    : await fetchIssueTarget(client, context, descriptor.number, descriptor.kind);
+  const current = new Set(target.labels.map((name) => name.toLowerCase()));
+  return event.requireLabels.every((labelId) => current.has(loaded.labels.get(labelId).name.toLowerCase()));
+}
+
 async function handleCommentEvent(args) {
-  const { context, loaded, result } = args;
+  const { client, context, loaded, result } = args;
   if (context.payload.action !== 'created') {
     result.skipped.push({ reason: 'comment-action-not-created' });
     return;
@@ -964,9 +977,14 @@ async function handleCommentEvent(args) {
       result.skipped.push({ reason: 'issue-comment-not-configured-or-actor-not-allowed' });
       return;
     }
+    const descriptor = { kind: 'issue', number: issue.number };
+    if (!await commentTargetHasRequiredLabels(client, context, event, loaded, descriptor)) {
+      result.skipped.push({ reason: 'issue-comment-required-labels-not-present' });
+      return;
+    }
     await applyTransitionToTargets({
       ...args,
-      descriptors: [{ kind: 'issue', number: issue.number }],
+      descriptors: [descriptor],
       transitionId: event.transition,
     });
     return;
@@ -977,9 +995,14 @@ async function handleCommentEvent(args) {
       result.skipped.push({ reason: 'discussion-comment-not-configured-or-actor-not-allowed' });
       return;
     }
+    const descriptor = { kind: 'discussion', number: context.payload.discussion.number };
+    if (!await commentTargetHasRequiredLabels(client, context, event, loaded, descriptor)) {
+      result.skipped.push({ reason: 'discussion-comment-required-labels-not-present' });
+      return;
+    }
     await applyTransitionToTargets({
       ...args,
-      descriptors: [{ kind: 'discussion', number: context.payload.discussion.number }],
+      descriptors: [descriptor],
       transitionId: event.transition,
     });
     return;

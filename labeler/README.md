@@ -151,11 +151,13 @@ use GitHub GraphQL mutations.
   "events": {
     "issueCommented": {
       "transition": "start_progress",
-      "allowedActors": ["issue-author", "assignee"]
+      "allowedActors": ["issue-author", "assignee"],
+      "requireLabels": ["waiting_for_response"]
     },
     "discussionCommented": {
       "transition": "start_progress",
-      "allowedActors": ["discussion-author"]
+      "allowedActors": ["discussion-author"],
+      "requireLabels": ["waiting_for_response"]
     },
     "labelChanged": [
       {
@@ -172,6 +174,10 @@ use GitHub GraphQL mutations.
 A label-change transition may not add or remove its own trigger label. This is
 rejected as a potential event loop even though ordinary `GITHUB_TOKEN`
 mutations usually do not retrigger workflows.
+
+Comment hooks run only when every semantic ID in optional `requireLabels` is
+currently assigned. This prevents an ordinary author comment from moving an
+unrelated issue into an active lifecycle state.
 
 ## Dry-run, bulk guards, and outputs
 

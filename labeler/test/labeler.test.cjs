@@ -46,6 +46,11 @@ function config(overrides = {}) {
       },
     },
     events: {
+      issueCommented: {
+        transition: 'start',
+        allowedActors: ['issue-author', 'assignee'],
+        requireLabels: ['waiting_for_release'],
+      },
       releasePublished: {
         transition: 'finish',
         selector: {
@@ -94,6 +99,21 @@ test('label-change rules cannot mutate their own trigger label', () => {
     },
   });
   assert.throws(() => labeler.parseConfig(invalid), /must not add or remove its trigger label/);
+});
+
+test('comment guards reference semantic label IDs', () => {
+  const loaded = labeler.parseConfig(config());
+  assert.deepEqual(loaded.events.get('issueCommented').requireLabels, ['waiting_for_release']);
+  const invalid = config({
+    events: {
+      issueCommented: {
+        transition: 'start',
+        allowedActors: ['issue-author'],
+        requireLabels: ['missing'],
+      },
+    },
+  });
+  assert.throws(() => labeler.parseConfig(invalid), /unknown required label ID "missing"/);
 });
 
 test('release selector implements all, any, and not', () => {
