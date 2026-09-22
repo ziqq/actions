@@ -46,6 +46,7 @@ jobs:
   notify:
     name: Notify about CI result
     needs: test
+    continue-on-error: true
     if: >-
       always() &&
       github.actor != 'dependabot[bot]' &&
