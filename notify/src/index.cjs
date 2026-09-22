@@ -390,19 +390,41 @@ function renderTemplate(source, values, provider, sourceName = 'template') {
 
 function parseDiscordWebhooks(raw, mode) {
   const value = parseJson(raw, 'discord-webhooks');
-  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || item.length === 0)) {
-    configurationError('discord-webhooks must be a JSON array of non-empty strings.');
+  if (!isPlainObject(value)) configurationError('discord-webhooks must be a JSON object.');
+  const unknownRoot = Object.keys(value).find((key) => key !== 'targets');
+  if (unknownRoot) {
+    configurationError(`discord-webhooks contains unsupported property "${unknownRoot}".`);
   }
-  const unique = [...new Set(value)];
-  for (const webhook of unique) {
-    const parsed = requireHttpUrl(webhook, 'Discord webhook');
+  if (!Array.isArray(value.targets)) {
+    configurationError('discord-webhooks.targets must be a JSON array.');
+  }
+  const webhooks = [];
+  const seen = new Set();
+  for (const [index, item] of value.targets.entries()) {
+    if (!isPlainObject(item)) {
+      configurationError(`discord-webhooks.targets[${index}] must be an object.`);
+    }
+    const unknown = Object.keys(item).find((key) => key !== 'url');
+    if (unknown) {
+      configurationError(
+        `discord-webhooks.targets[${index}] contains unsupported property "${unknown}".`,
+      );
+    }
+    if (typeof item.url !== 'string' || item.url.length === 0) {
+      configurationError(`discord-webhooks.targets[${index}].url must be a non-empty string.`);
+    }
+    const parsed = requireHttpUrl(item.url, `discord-webhooks.targets[${index}].url`);
     if (!['discord.com', 'discordapp.com'].includes(new URL(parsed).hostname)) {
       configurationError('Discord webhook host must be discord.com or discordapp.com.');
     }
-    core.setSecret(webhook);
+    core.setSecret(item.url);
+    if (!seen.has(item.url)) webhooks.push(item.url);
+    seen.add(item.url);
   }
-  if (mode === 'send' && unique.length === 0) configurationError('discord-webhooks must contain a target.');
-  return unique;
+  if (mode === 'send' && webhooks.length === 0) {
+    configurationError('discord-webhooks.targets must contain a target.');
+  }
+  return webhooks;
 }
 
 function parseTelegramTargets(raw, mode) {
@@ -629,7 +651,7 @@ function buildConfiguration(env = process.env) {
   }
 
   const discordWebhooks = providers.includes('discord')
-    ? parseDiscordWebhooks(getInput(env, 'discord-webhooks', '[]'), mode)
+    ? parseDiscordWebhooks(getInput(env, 'discord-webhooks', '{"targets":[]}'), mode)
     : [];
   const telegramToken = getInput(env, 'telegram-bot-token');
   if (telegramToken) core.setSecret(telegramToken);

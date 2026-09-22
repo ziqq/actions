@@ -51,9 +51,9 @@ inputs:
     required: false
     default: ""
   discord-webhooks:
-    description: JSON array of Discord webhook URLs.
+    description: JSON object with a targets array containing Discord webhook URLs.
     required: false
-    default: "[]"
+    default: '{"targets":[]}'
   discord-username:
     description: Optional Discord webhook username override.
     required: false

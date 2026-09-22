@@ -24,7 +24,7 @@ attachments are resolved below `github.workspace`.
         "status": "success",
         "changelog_url": "https://github.com/ziqq/flutter_in_store_app_version_checker/releases/tag/v3.1.0"
       }
-    discord-webhooks: '["${{ secrets.DISCORD_WEBHOOK }}"]'
+    discord-webhooks: ${{ secrets.DISCORD_WEBHOOKS }}
     telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
     telegram-targets: >-
       {"targets":[{"chatId":"${{ secrets.TELEGRAM_CHAT_ID }}"}]}
@@ -102,7 +102,9 @@ release information.
 
 ## Delivery targets and policy
 
-- `discord-webhooks` is a JSON array of Discord webhook URLs.
+- `discord-webhooks` is a JSON object with a required `targets` array. Every
+  target contains a webhook `url`, for example
+  `{"targets":[{"url":"https://discord.com/api/webhooks/..."}]}`.
 - `telegram-targets` is a JSON object with a required `targets` array. Every
   target contains `chatId` and may contain `threadId`, for example
   `{"targets":[{"chatId":"123456789"}]}`.

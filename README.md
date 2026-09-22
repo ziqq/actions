@@ -43,7 +43,7 @@ Configure these repository Actions secrets:
 
 | Secret | Value |
 |---|---|
-| `DISCORD_WEBHOOKS` | JSON array of webhook URLs, for example `["https://discord.com/api/webhooks/..."]` |
+| `DISCORD_WEBHOOKS` | JSON object with a target list, for example `{"targets":[{"url":"https://discord.com/api/webhooks/..."}]}` |
 | `TELEGRAM_BOT_TOKEN` | Token issued by BotFather |
 | `TELEGRAM_TARGETS` | JSON object with a target list, for example `{"targets":[{"chatId":"123456789"}]}` |
 

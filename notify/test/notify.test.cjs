@@ -104,6 +104,33 @@ test('Telegram targets use an explicit root object', () => {
   }), /unsupported property "unknown"/);
 });
 
+test('Discord targets use an explicit root object', () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'notify-discord-targets-test-'));
+  fs.writeFileSync(path.join(workspace, 'message.md.tmpl'), 'Hello\n');
+  const base = {
+    GITHUB_WORKSPACE: workspace,
+    INPUT_MODE: 'send',
+    INPUT_PROVIDERS: 'discord',
+    'INPUT_TEMPLATE-PATH': 'message.md.tmpl',
+  };
+  const url = 'https://discord.com/api/webhooks/123/test-token';
+
+  const config = notify.buildConfiguration({
+    ...base,
+    'INPUT_DISCORD-WEBHOOKS': JSON.stringify({ targets: [{ url }] }),
+  });
+  assert.deepEqual(config.discord.webhooks, [url]);
+
+  assert.throws(() => notify.buildConfiguration({
+    ...base,
+    'INPUT_DISCORD-WEBHOOKS': JSON.stringify([url]),
+  }), /discord-webhooks must be a JSON object/);
+  assert.throws(() => notify.buildConfiguration({
+    ...base,
+    'INPUT_DISCORD-WEBHOOKS': url,
+  }), /discord-webhooks must contain valid JSON/);
+});
+
 test('requestWithRetry retries retryable responses and respects Retry-After', async () => {
   const originalFetch = global.fetch;
   const waits = [];
