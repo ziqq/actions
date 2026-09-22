@@ -1,9 +1,9 @@
-# CI {{status}}
+# {{status_icon}} CI {{status_label}}
 
-Repository: **{{github.repository}}**
+## {{github.repository}}
 
-- Event: `{{github.event_name}}`
-- Ref: `{{github.ref_name}}`
-- Actor: **{{github.actor}}**
+`{{github.ref_name}}` · **Run #{{github.run_number}}**
 
-[Open workflow run]({{url github.run_url}})
+{{event_label}} by **{{github.actor}}**
+
+[Open workflow run →]({{url github.run_url}})

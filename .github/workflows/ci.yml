@@ -88,7 +88,9 @@ jobs:
           template-path: .github/notify/ci.md.tmpl
           variables: |
             {
-              "status": ${{ toJSON(needs.test.result) }}
+              "event_label": ${{ toJSON(github.event_name == 'push' && 'Push' || github.event_name == 'pull_request' && 'Pull request' || github.event_name == 'workflow_dispatch' && 'Manual run' || github.event_name) }},
+              "status_icon": ${{ toJSON(needs.test.result == 'success' && '✅' || needs.test.result == 'cancelled' && '⏹️' || '❌') }},
+              "status_label": ${{ toJSON(needs.test.result == 'success' && 'passed' || needs.test.result == 'cancelled' && 'cancelled' || 'failed') }}
             }
           failure-policy: best-effort
           timeout-ms: "10000"
