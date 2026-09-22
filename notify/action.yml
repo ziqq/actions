@@ -1,0 +1,116 @@
+name: Template notification
+description: Render safe CommonMark templates and notify Discord, Telegram, or both.
+
+inputs:
+  mode:
+    description: "send, validate, or render. Render writes provider messages to render-output-directory."
+    required: false
+    default: send
+  providers:
+    description: "Comma-separated providers: discord, telegram, or both."
+    required: false
+    default: discord,telegram
+  template-path:
+    description: Optional repository-relative shared CommonMark template.
+    required: false
+    default: ""
+  discord-template-path:
+    description: Optional repository-relative Discord CommonMark template override.
+    required: false
+    default: ""
+  telegram-template-path:
+    description: Optional repository-relative Telegram CommonMark template override.
+    required: false
+    default: ""
+  discord-payload-path:
+    description: Optional repository-relative native Discord webhook payload JSON.
+    required: false
+    default: ""
+  telegram-payload-path:
+    description: Optional repository-relative native Telegram method/body JSON.
+    required: false
+    default: ""
+  variables:
+    description: JSON object containing explicitly exposed template variables.
+    required: false
+    default: "{}"
+  failure-policy:
+    description: "required fails after all deliveries; best-effort reports failures as warnings."
+    required: false
+    default: required
+  timeout-ms:
+    description: Per-request timeout in milliseconds.
+    required: false
+    default: "10000"
+  max-attempts:
+    description: Maximum attempts for network, HTTP 408/409/425/429, and 5xx failures.
+    required: false
+    default: "5"
+  render-output-directory:
+    description: Directory used only in render mode. Defaults below RUNNER_TEMP.
+    required: false
+    default: ""
+  discord-webhooks:
+    description: JSON array of Discord webhook URLs.
+    required: false
+    default: "[]"
+  discord-username:
+    description: Optional Discord webhook username override.
+    required: false
+    default: ""
+  discord-avatar-url:
+    description: Optional HTTPS Discord webhook avatar URL.
+    required: false
+    default: ""
+  discord-tts:
+    description: Send Discord text-to-speech messages.
+    required: false
+    default: "false"
+  telegram-bot-token:
+    description: Telegram bot token.
+    required: false
+    default: ""
+  telegram-targets:
+    description: JSON array of objects with chatId and optional threadId.
+    required: false
+    default: "[]"
+  telegram-disable-link-preview:
+    description: Disable Telegram link previews.
+    required: false
+    default: "true"
+  telegram-silent:
+    description: Deliver Telegram messages without a notification sound.
+    required: false
+    default: "false"
+  attachments:
+    description: JSON array of local or public URL attachments.
+    required: false
+    default: "[]"
+  qr-data:
+    description: Optional public value encoded by the external QR image service.
+    required: false
+    default: ""
+  qr-data-is-public:
+    description: Explicitly allow qr-data to leave the runner.
+    required: false
+    default: "false"
+  send-qr:
+    description: Add the generated QR photo to Telegram deliveries.
+    required: false
+    default: "false"
+  qr-caption:
+    description: Optional Telegram QR photo caption.
+    required: false
+    default: ""
+
+outputs:
+  delivery-results:
+    description: Safe JSON summary without credentials, target identifiers, or message bodies.
+  message-metadata:
+    description: JSON summary containing only rendered lengths and SHA-256 hashes.
+  rendered-files:
+    description: JSON array of local files written in render mode.
+
+runs:
+  using: node24
+  main: dist/index.js

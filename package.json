@@ -1,0 +1,26 @@
+{
+  "name": "@ziqq/actions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reusable GitHub Actions maintained by ziqq.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "npm run build:notify && npm run build:labeler",
+    "build:notify": "esbuild notify/src/index.cjs --bundle --platform=node --target=node24 --format=cjs --outfile=notify/dist/index.js --minify --sourcemap",
+    "build:labeler": "esbuild labeler/src/index.cjs --bundle --platform=node --target=node24 --format=cjs --outfile=labeler/dist/index.js --minify --sourcemap",
+    "test": "npm run build && node --test notify/test/*.test.cjs labeler/test/*.test.cjs",
+    "verify": "npm test && git diff --check"
+  },
+  "dependencies": {
+    "@actions/core": "3.0.1",
+    "@actions/github": "9.1.1",
+    "markdown-it": "15.0.2",
+    "minimatch": "10.2.6"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

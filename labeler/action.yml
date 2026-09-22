@@ -1,0 +1,80 @@
+name: Semantic repository labeler
+description: Synchronize labels and apply guarded lifecycle transitions through stable semantic IDs.
+
+inputs:
+  operation:
+    description: "sync-labels, path-labels, branch-created, pull-request, release-published, comment-event, label-event, or apply."
+    required: true
+  github-token:
+    description: Repository-scoped GitHub token.
+    required: true
+  config-path:
+    description: Repository-relative label configuration path.
+    required: false
+    default: .github/labels.json
+  config-source:
+    description: "api loads from a trusted Git ref; workspace reads the checked-out file."
+    required: false
+    default: api
+  config-ref:
+    description: Optional trusted Git ref. Defaults to PR base SHA or repository default branch.
+    required: false
+    default: ""
+  transition:
+    description: Semantic transition ID used by apply.
+    required: false
+    default: ""
+  target-numbers:
+    description: Comma-separated issue, pull request, or discussion numbers used by apply.
+    required: false
+    default: ""
+  target-kind:
+    description: "issue, pull-request, or discussion for apply."
+    required: false
+    default: issue
+  dry-run:
+    description: Build and output a complete plan without mutations.
+    required: false
+    default: "false"
+  allow-empty:
+    description: Allow selectors or explicit operations to resolve no targets.
+    required: false
+    default: "false"
+  max-targets:
+    description: Maximum targets mutated by a single invocation.
+    required: false
+    default: "100"
+  max-files:
+    description: Maximum changed files inspected by path-labels.
+    required: false
+    default: "3000"
+  allow-label-deletion:
+    description: Required in addition to orphanPolicy=delete before unmanaged labels can be deleted.
+    required: false
+    default: "false"
+  allow-pattern-removal:
+    description: Required before a transition with removeIdPatterns can run.
+    required: false
+    default: "false"
+
+outputs:
+  plan:
+    description: Complete safe JSON mutation plan.
+  transition:
+    description: Semantic transition ID selected by the operation.
+  targets:
+    description: JSON array of selected target kind/number pairs.
+  added:
+    description: JSON array of labels added by completed mutations.
+  removed:
+    description: JSON array of labels removed by completed mutations.
+  skipped:
+    description: JSON array of no-op targets or labels.
+  warnings:
+    description: JSON array of non-fatal warnings.
+  partial-failures:
+    description: JSON array of targets whose mutation failed after another mutation completed.
+
+runs:
+  using: node24
+  main: dist/index.js
