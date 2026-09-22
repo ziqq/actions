@@ -1,0 +1,95 @@
+name: Notifications
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: Test message sent to Discord and Telegram
+        type: string
+        required: true
+        default: Manual notification test
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+jobs:
+  manual-test:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NOTIFY_DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
+      NOTIFY_TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      NOTIFY_TELEGRAM_TARGETS: ${{ secrets.TELEGRAM_TARGETS }}
+    steps:
+      - name: Verify notification secrets
+        if: >-
+          env.NOTIFY_DISCORD_WEBHOOKS == '' ||
+          env.NOTIFY_TELEGRAM_BOT_TOKEN == '' ||
+          env.NOTIFY_TELEGRAM_TARGETS == ''
+        shell: bash
+        run: |
+          echo "::error::Configure DISCORD_WEBHOOKS, TELEGRAM_BOT_TOKEN, and TELEGRAM_TARGETS."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Send test notification
+        uses: ./notify
+        with:
+          providers: discord,telegram
+          template-path: .github/notify/test.md.tmpl
+          variables: |
+            {
+              "message": ${{ toJSON(inputs.message) }}
+            }
+          failure-policy: required
+          timeout-ms: "10000"
+          max-attempts: "5"
+          discord-webhooks: ${{ env.NOTIFY_DISCORD_WEBHOOKS }}
+          telegram-bot-token: ${{ env.NOTIFY_TELEGRAM_BOT_TOKEN }}
+          telegram-targets: ${{ env.NOTIFY_TELEGRAM_TARGETS }}
+
+  issue-opened:
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NOTIFY_DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
+      NOTIFY_TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      NOTIFY_TELEGRAM_TARGETS: ${{ secrets.TELEGRAM_TARGETS }}
+    steps:
+      - name: Verify notification secrets
+        if: >-
+          env.NOTIFY_DISCORD_WEBHOOKS == '' ||
+          env.NOTIFY_TELEGRAM_BOT_TOKEN == '' ||
+          env.NOTIFY_TELEGRAM_TARGETS == ''
+        shell: bash
+        run: |
+          echo "::error::Configure DISCORD_WEBHOOKS, TELEGRAM_BOT_TOKEN, and TELEGRAM_TARGETS."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Notify about new issue
+        uses: ./notify
+        with:
+          providers: discord,telegram
+          template-path: .github/notify/issue.md.tmpl
+          variables: |
+            {
+              "issue_number": ${{ toJSON(github.event.issue.number) }},
+              "issue_title": ${{ toJSON(github.event.issue.title) }},
+              "issue_author": ${{ toJSON(github.event.issue.user.login) }},
+              "issue_url": ${{ toJSON(github.event.issue.html_url) }}
+            }
+          failure-policy: required
+          timeout-ms: "10000"
+          max-attempts: "5"
+          discord-webhooks: ${{ env.NOTIFY_DISCORD_WEBHOOKS }}
+          telegram-bot-token: ${{ env.NOTIFY_TELEGRAM_BOT_TOKEN }}
+          telegram-targets: ${{ env.NOTIFY_TELEGRAM_TARGETS }}

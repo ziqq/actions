@@ -42,3 +42,56 @@ jobs:
 
       - name: Check whitespace
         run: git diff --check
+
+  notify:
+    name: Notify about CI result
+    needs: test
+    if: >-
+      always() &&
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NOTIFY_DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
+      NOTIFY_TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      NOTIFY_TELEGRAM_TARGETS: ${{ secrets.TELEGRAM_TARGETS }}
+    steps:
+      - name: Check notification configuration
+        if: >-
+          env.NOTIFY_DISCORD_WEBHOOKS == '' ||
+          env.NOTIFY_TELEGRAM_BOT_TOKEN == '' ||
+          env.NOTIFY_TELEGRAM_TARGETS == ''
+        shell: bash
+        run: echo "::warning::Notification secrets are not fully configured; skipping delivery."
+
+      - name: Checkout trusted notification action and template
+        if: >-
+          env.NOTIFY_DISCORD_WEBHOOKS != '' &&
+          env.NOTIFY_TELEGRAM_BOT_TOKEN != '' &&
+          env.NOTIFY_TELEGRAM_TARGETS != ''
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.sha }}
+
+      - name: Send CI notification
+        if: >-
+          env.NOTIFY_DISCORD_WEBHOOKS != '' &&
+          env.NOTIFY_TELEGRAM_BOT_TOKEN != '' &&
+          env.NOTIFY_TELEGRAM_TARGETS != '' &&
+          hashFiles('.github/notify/ci.md.tmpl') != ''
+        uses: ./notify
+        with:
+          providers: discord,telegram
+          template-path: .github/notify/ci.md.tmpl
+          variables: |
+            {
+              "status": ${{ toJSON(needs.test.result) }}
+            }
+          failure-policy: best-effort
+          timeout-ms: "10000"
+          max-attempts: "5"
+          discord-webhooks: ${{ env.NOTIFY_DISCORD_WEBHOOKS }}
+          telegram-bot-token: ${{ env.NOTIFY_TELEGRAM_BOT_TOKEN }}
+          telegram-targets: ${{ env.NOTIFY_TELEGRAM_TARGETS }}

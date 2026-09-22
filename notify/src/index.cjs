@@ -407,25 +407,44 @@ function parseDiscordWebhooks(raw, mode) {
 
 function parseTelegramTargets(raw, mode) {
   const value = parseJson(raw, 'telegram-targets');
-  if (!Array.isArray(value)) configurationError('telegram-targets must be a JSON array.');
+  if (!isPlainObject(value)) configurationError('telegram-targets must be a JSON object.');
+  const unknownRoot = Object.keys(value).find((key) => key !== 'targets');
+  if (unknownRoot) {
+    configurationError(`telegram-targets contains unsupported property "${unknownRoot}".`);
+  }
+  if (!Array.isArray(value.targets)) {
+    configurationError('telegram-targets.targets must be a JSON array.');
+  }
   const targets = [];
   const seen = new Set();
-  for (const [index, item] of value.entries()) {
-    if (!isPlainObject(item)) configurationError(`telegram-targets[${index}] must be an object.`);
+  for (const [index, item] of value.targets.entries()) {
+    if (!isPlainObject(item)) {
+      configurationError(`telegram-targets.targets[${index}] must be an object.`);
+    }
     const allowed = new Set(['chatId', 'threadId']);
     const unknown = Object.keys(item).find((key) => !allowed.has(key));
-    if (unknown) configurationError(`telegram-targets[${index}] contains unsupported property "${unknown}".`);
+    if (unknown) {
+      configurationError(
+        `telegram-targets.targets[${index}] contains unsupported property "${unknown}".`,
+      );
+    }
     const chatId = String(item.chatId ?? '');
-    if (!/^-?\d+$/.test(chatId)) configurationError(`telegram-targets[${index}].chatId must be an integer.`);
+    if (!/^-?\d+$/.test(chatId)) {
+      configurationError(`telegram-targets.targets[${index}].chatId must be an integer.`);
+    }
     const threadId = item.threadId === undefined ? '' : String(item.threadId);
     if (threadId && !/^\d+$/.test(threadId)) {
-      configurationError(`telegram-targets[${index}].threadId must be a positive integer.`);
+      configurationError(
+        `telegram-targets.targets[${index}].threadId must be a positive integer.`,
+      );
     }
     const key = `${chatId}:${threadId}`;
     if (!seen.has(key)) targets.push({ chatId, threadId });
     seen.add(key);
   }
-  if (mode === 'send' && targets.length === 0) configurationError('telegram-targets must contain a target.');
+  if (mode === 'send' && targets.length === 0) {
+    configurationError('telegram-targets.targets must contain a target.');
+  }
   return targets;
 }
 
@@ -615,7 +634,7 @@ function buildConfiguration(env = process.env) {
   const telegramToken = getInput(env, 'telegram-bot-token');
   if (telegramToken) core.setSecret(telegramToken);
   const telegramTargets = providers.includes('telegram')
-    ? parseTelegramTargets(getInput(env, 'telegram-targets', '[]'), mode)
+    ? parseTelegramTargets(getInput(env, 'telegram-targets', '{"targets":[]}'), mode)
     : [];
   if (mode === 'send' && providers.includes('telegram') && !telegramToken) {
     configurationError('telegram-bot-token is required for send mode.');

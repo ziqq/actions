@@ -77,6 +77,33 @@ test('buildConfiguration keeps templates inside the workspace and needs no targe
   }), /must resolve inside/);
 });
 
+test('Telegram targets use an explicit root object', () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'notify-targets-test-'));
+  fs.writeFileSync(path.join(workspace, 'message.md.tmpl'), 'Hello\n');
+  const base = {
+    GITHUB_WORKSPACE: workspace,
+    INPUT_MODE: 'send',
+    INPUT_PROVIDERS: 'telegram',
+    INPUT_TEMPLATE_PATH: 'message.md.tmpl',
+    INPUT_TELEGRAM_BOT_TOKEN: '123456:test-token',
+  };
+
+  const config = notify.buildConfiguration({
+    ...base,
+    INPUT_TELEGRAM_TARGETS: '{"targets":[{"chatId":"263420264"}]}',
+  });
+  assert.deepEqual(config.telegram.targets, [{ chatId: '263420264', threadId: '' }]);
+
+  assert.throws(() => notify.buildConfiguration({
+    ...base,
+    INPUT_TELEGRAM_TARGETS: '[{"chatId":"263420264"}]',
+  }), /telegram-targets must be a JSON object/);
+  assert.throws(() => notify.buildConfiguration({
+    ...base,
+    INPUT_TELEGRAM_TARGETS: '{"targets":[],"unknown":true}',
+  }), /unsupported property "unknown"/);
+});
+
 test('requestWithRetry retries retryable responses and respects Retry-After', async () => {
   const originalFetch = global.fetch;
   const waits = [];

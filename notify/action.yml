@@ -71,9 +71,9 @@ inputs:
     required: false
     default: ""
   telegram-targets:
-    description: JSON array of objects with chatId and optional threadId.
+    description: JSON object with a targets array containing chatId and optional threadId.
     required: false
-    default: "[]"
+    default: '{"targets":[]}'
   telegram-disable-link-preview:
     description: Disable Telegram link previews.
     required: false

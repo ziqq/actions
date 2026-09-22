@@ -27,7 +27,7 @@ attachments are resolved below `github.workspace`.
     discord-webhooks: '["${{ secrets.DISCORD_WEBHOOK }}"]'
     telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
     telegram-targets: >-
-      [{"chatId":"${{ secrets.TELEGRAM_CHAT_ID }}"}]
+      {"targets":[{"chatId":"${{ secrets.TELEGRAM_CHAT_ID }}"}]}
 ```
 
 Use immutable full SHAs for this action and every action in the caller.
@@ -103,8 +103,9 @@ release information.
 ## Delivery targets and policy
 
 - `discord-webhooks` is a JSON array of Discord webhook URLs.
-- `telegram-targets` is a JSON array of `{ "chatId": "...", "threadId":
-  "..." }` objects. `threadId` is optional.
+- `telegram-targets` is a JSON object with a required `targets` array. Every
+  target contains `chatId` and may contain `threadId`, for example
+  `{"targets":[{"chatId":"123456789"}]}`.
 - `failure-policy: required` tries every target and then fails if any target
   failed. `best-effort` emits warnings and succeeds.
 - `timeout-ms` defaults to 10 seconds per request.

@@ -32,6 +32,25 @@ npm run verify
 request must include source, lockfile, tests, documentation, and regenerated
 distribution changes in the same commit.
 
+## Repository notifications
+
+The `Notifications` workflow is the single manual delivery test for this
+repository. It sends its input to Discord and Telegram through the local
+`notify` action. The same workflow reports newly opened issues, and the final
+job in `CI` reports the completed CI result.
+
+Configure these repository Actions secrets:
+
+| Secret | Value |
+|---|---|
+| `DISCORD_WEBHOOKS` | JSON array of webhook URLs, for example `["https://discord.com/api/webhooks/..."]` |
+| `TELEGRAM_BOT_TOKEN` | Token issued by BotFather |
+| `TELEGRAM_TARGETS` | JSON object with a target list, for example `{"targets":[{"chatId":"123456789"}]}` |
+
+Manual and issue delivery is required and fails visibly when configuration or
+delivery is invalid. CI delivery is best-effort so notification infrastructure
+cannot replace the actual CI result.
+
 ## Design guarantees
 
 - Repository configuration and templates remain caller-owned.
