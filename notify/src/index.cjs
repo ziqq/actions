@@ -51,7 +51,7 @@ function configurationError(message) {
 }
 
 function inputName(name) {
-  return `INPUT_${name.replaceAll(' ', '_').replaceAll('-', '_').toUpperCase()}`;
+  return `INPUT_${name.replaceAll(' ', '_').toUpperCase()}`;
 }
 
 function getInput(env, name, fallback = '') {

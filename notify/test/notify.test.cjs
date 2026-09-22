@@ -61,7 +61,7 @@ test('buildConfiguration keeps templates inside the workspace and needs no targe
     GITHUB_WORKSPACE: workspace,
     INPUT_MODE: 'validate',
     INPUT_PROVIDERS: 'discord,telegram',
-    INPUT_TEMPLATE_PATH: 'message.md.tmpl',
+    'INPUT_TEMPLATE-PATH': 'message.md.tmpl',
     INPUT_VARIABLES: '{"name":"world"}',
   });
   assert.deepEqual(config.providers, ['discord', 'telegram']);
@@ -73,7 +73,7 @@ test('buildConfiguration keeps templates inside the workspace and needs no targe
     GITHUB_WORKSPACE: workspace,
     INPUT_MODE: 'validate',
     INPUT_PROVIDERS: 'discord',
-    INPUT_TEMPLATE_PATH: '../outside.md.tmpl',
+    'INPUT_TEMPLATE-PATH': '../outside.md.tmpl',
   }), /must resolve inside/);
 });
 
@@ -84,23 +84,23 @@ test('Telegram targets use an explicit root object', () => {
     GITHUB_WORKSPACE: workspace,
     INPUT_MODE: 'send',
     INPUT_PROVIDERS: 'telegram',
-    INPUT_TEMPLATE_PATH: 'message.md.tmpl',
-    INPUT_TELEGRAM_BOT_TOKEN: '123456:test-token',
+    'INPUT_TELEGRAM-BOT-TOKEN': '123456:test-token',
+    'INPUT_TEMPLATE-PATH': 'message.md.tmpl',
   };
 
   const config = notify.buildConfiguration({
     ...base,
-    INPUT_TELEGRAM_TARGETS: '{"targets":[{"chatId":"263420264"}]}',
+    'INPUT_TELEGRAM-TARGETS': '{"targets":[{"chatId":"263420264"}]}',
   });
   assert.deepEqual(config.telegram.targets, [{ chatId: '263420264', threadId: '' }]);
 
   assert.throws(() => notify.buildConfiguration({
     ...base,
-    INPUT_TELEGRAM_TARGETS: '[{"chatId":"263420264"}]',
+    'INPUT_TELEGRAM-TARGETS': '[{"chatId":"263420264"}]',
   }), /telegram-targets must be a JSON object/);
   assert.throws(() => notify.buildConfiguration({
     ...base,
-    INPUT_TELEGRAM_TARGETS: '{"targets":[],"unknown":true}',
+    'INPUT_TELEGRAM-TARGETS': '{"targets":[],"unknown":true}',
   }), /unsupported property "unknown"/);
 });
 

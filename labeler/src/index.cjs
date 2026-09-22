@@ -34,7 +34,7 @@ function fail(message) {
 }
 
 function inputName(name) {
-  return `INPUT_${name.replaceAll('-', '_').toUpperCase()}`;
+  return `INPUT_${name.toUpperCase()}`;
 }
 
 function getInput(env, name, fallback = '') {

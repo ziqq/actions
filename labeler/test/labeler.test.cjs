@@ -70,6 +70,24 @@ function config(overrides = {}) {
   };
 }
 
+test('GitHub action input names preserve hyphens', () => {
+  const inputs = labeler.buildInputs({
+    'INPUT_ALLOW-EMPTY': 'true',
+    'INPUT_CONFIG-SOURCE': 'workspace',
+    'INPUT_DRY-RUN': 'true',
+    INPUT_OPERATION: 'apply',
+    'INPUT_TARGET-KIND': 'pull-request',
+    'INPUT_TARGET-NUMBERS': '12',
+    INPUT_TRANSITION: 'start',
+  });
+
+  assert.equal(inputs.allowEmpty, true);
+  assert.equal(inputs.configSource, 'workspace');
+  assert.equal(inputs.dryRun, true);
+  assert.equal(inputs.targetKind, 'pull-request');
+  assert.deepEqual(inputs.targetNumbers, [12]);
+});
+
 test('semantic IDs are independent from visible label names', () => {
   const loaded = labeler.parseConfig(config());
   const transition = labeler.resolveTransition(loaded, 'start', false);
