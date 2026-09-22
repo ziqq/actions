@@ -41,7 +41,7 @@ jobs:
         uses: ./notify
         with:
           providers: discord,telegram
-          template-path: .github/notify/test.md.tmpl
+          template-path: .github/notify/templates/test.md
           variables: |
             {
               "message": ${{ toJSON(inputs.message) }}
@@ -79,7 +79,7 @@ jobs:
         uses: ./notify
         with:
           providers: discord,telegram
-          template-path: .github/notify/issue.md.tmpl
+          template-path: .github/notify/templates/issue.md
           variables: |
             {
               "issue_number": ${{ toJSON(github.event.issue.number) }},

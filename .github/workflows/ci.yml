@@ -81,11 +81,11 @@ jobs:
           env.NOTIFY_DISCORD_WEBHOOKS != '' &&
           env.NOTIFY_TELEGRAM_BOT_TOKEN != '' &&
           env.NOTIFY_TELEGRAM_TARGETS != '' &&
-          hashFiles('.github/notify/ci.md.tmpl') != ''
+          hashFiles('.github/notify/templates/ci.md') != ''
         uses: ./notify
         with:
           providers: discord,telegram
-          template-path: .github/notify/ci.md.tmpl
+          template-path: .github/notify/templates/ci.md
           variables: |
             {
               "pub_dev_url": "",

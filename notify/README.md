@@ -16,7 +16,7 @@ attachments are resolved below `github.workspace`.
 - uses: ziqq/actions/notify@FULL_COMMIT_SHA
   with:
     providers: discord,telegram
-    template-path: .github/notify/release.md.tmpl
+    template-path: .github/notify/templates/release.md
     variables: |
       {
         "package": "flutter_in_store_app_version_checker",
@@ -34,8 +34,8 @@ Use immutable full SHAs for this action and every action in the caller.
 
 ## Template contract
 
-Use the `.md.tmpl` extension so editors, reviews, and local tooling recognize
-the canonical format:
+Keep repository-owned templates under `.github/notify/templates/` with the
+`.md` extension so editors, reviews, and local tooling recognize CommonMark:
 
 ```markdown
 # 🚀 {{package}} {{version}}
@@ -92,7 +92,7 @@ delivery targets. `mode: render` additionally writes `discord.md` and/or
   with:
     mode: render
     providers: discord,telegram
-    template-path: .github/notify/release.md.tmpl
+    template-path: .github/notify/templates/release.md
     render-output-directory: .tmp/notify-preview
 ```
 
