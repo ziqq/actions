@@ -1,0 +1,105 @@
+name: Notify new issues and pull requests
+
+on:
+  workflow_call:
+    inputs:
+      notify-issues:
+        description: Notify when a new issue is opened
+        type: boolean
+        required: false
+        default: false
+      notify-pull-requests:
+        description: Notify when a new pull request is opened
+        type: boolean
+        required: false
+        default: false
+      issue-template-path:
+        description: Caller-owned Markdown template for new issues
+        type: string
+        required: false
+        default: .github/notify/templates/issue.md
+      pull-request-template-path:
+        description: Caller-owned Markdown template for new pull requests
+        type: string
+        required: false
+        default: .github/notify/templates/pull-request.md
+    secrets:
+      DISCORD_WEBHOOKS:
+        required: false
+      TELEGRAM_BOT_TOKEN:
+        required: false
+      TELEGRAM_TARGETS:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  issue-opened:
+    if: >-
+      inputs.notify-issues &&
+      github.event_name == 'issues' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted caller template
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Notify about new issue
+        uses: ziqq/actions/notify@ccd1a799683cd461a45d9303ac6fcb2792f8f5d2
+        with:
+          providers: discord,telegram
+          template-path: ${{ inputs.issue-template-path }}
+          variables: |
+            {
+              "issue_number": ${{ toJSON(github.event.issue.number) }},
+              "issue_title": ${{ toJSON(github.event.issue.title) }},
+              "issue_author": ${{ toJSON(github.event.issue.user.login) }},
+              "issue_url": ${{ toJSON(github.event.issue.html_url) }}
+            }
+          failure-policy: required
+          timeout-ms: "10000"
+          max-attempts: "5"
+          discord-webhooks: ${{ secrets.DISCORD_WEBHOOKS }}
+          telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram-targets: ${{ secrets.TELEGRAM_TARGETS }}
+
+  pull-request-opened:
+    if: >-
+      inputs.notify-pull-requests &&
+      github.event_name == 'pull_request_target' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted caller template
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Notify about new pull request
+        uses: ziqq/actions/notify@ccd1a799683cd461a45d9303ac6fcb2792f8f5d2
+        with:
+          providers: discord,telegram
+          template-path: ${{ inputs.pull-request-template-path }}
+          variables: |
+            {
+              "pr_number": ${{ toJSON(github.event.pull_request.number) }},
+              "pr_title": ${{ toJSON(github.event.pull_request.title) }},
+              "pr_author": ${{ toJSON(github.event.pull_request.user.login) }},
+              "pr_url": ${{ toJSON(github.event.pull_request.html_url) }},
+              "pr_base_ref": ${{ toJSON(github.event.pull_request.base.ref) }},
+              "pr_head_ref": ${{ toJSON(github.event.pull_request.head.ref) }},
+              "pr_draft": ${{ toJSON(github.event.pull_request.draft) }}
+            }
+          failure-policy: required
+          timeout-ms: "10000"
+          max-attempts: "5"
+          discord-webhooks: ${{ secrets.DISCORD_WEBHOOKS }}
+          telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram-targets: ${{ secrets.TELEGRAM_TARGETS }}

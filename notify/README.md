@@ -32,6 +32,74 @@ attachments are resolved below `github.workspace`.
 
 Use immutable full SHAs for this action and every action in the caller.
 
+## Optional notifications for new issues and pull requests
+
+The reusable workflow `.github/workflows/notify-events.yml` sends notifications
+through `notify` when an issue or pull request is opened. Its independent boolean
+inputs `notify-issues` and `notify-pull-requests` both default to `false`.
+Disabled jobs are skipped before checkout, template validation, or secret use.
+Other events, including edits, reopened items, PR synchronization, and ready-for-review,
+do not send a new-item notification. Draft PRs are included when opened.
+
+Add this caller workflow to the repository that should receive notifications:
+
+```yaml
+name: New issue and PR notifications
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    uses: ziqq/actions/.github/workflows/notify-events.yml@FULL_COMMIT_SHA
+    with:
+      notify-issues: true
+      notify-pull-requests: true
+    secrets:
+      DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_TARGETS: ${{ secrets.TELEGRAM_TARGETS }}
+```
+
+Omit either boolean or set it to `false` to disable that event type. To toggle
+without editing YAML, use repository Actions variables instead:
+
+```yaml
+    with:
+      notify-issues: ${{ vars.NOTIFY_ISSUES == 'true' }}
+      notify-pull-requests: ${{ vars.NOTIFY_PULL_REQUESTS == 'true' }}
+```
+
+Unset variables disable both notifications. Enabled jobs require the three
+delivery secrets and use `failure-policy: required`. The workflow itself does
+not create event subscriptions; the caller must declare the `on` triggers above.
+It does not change existing CI notifications or separately configured legacy
+issue-notification workflows. Replace the legacy job to avoid duplicate messages.
+
+Templates belong to the caller repository. `issue-template-path` defaults to
+`.github/notify/templates/issue.md`; `pull-request-template-path` defaults to
+`.github/notify/templates/pull-request.md`. Both paths can be overridden.
+Copy the examples from this repository's `.github/notify/templates/` directory.
+
+Issue templates receive `issue_number`, `issue_title`, `issue_author`, and
+`issue_url`. PR templates receive `pr_number`, `pr_title`, `pr_author`, `pr_url`,
+`pr_head_ref`, `pr_base_ref`, and boolean `pr_draft`. Titles and branch names are
+passed as JSON data using `toJSON`, then escaped by `notify` for each provider.
+They are never interpolated into shell commands.
+
+The PR trigger is `pull_request_target` so new PRs from forks can notify with
+the base repository's secrets. The checkout explicitly selects the base SHA;
+the workflow reads templates and runs only the pinned published action. It never
+checks out or runs PR head code, requests write permissions, or installs caller
+dependencies. Dependabot PRs follow GitHub's secret restrictions and need secrets
+configured for Dependabot if their notifications are enabled.
+
 ## Template contract
 
 Keep repository-owned templates under `.github/notify/templates/` with the

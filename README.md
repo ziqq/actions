@@ -36,8 +36,15 @@ distribution changes in the same commit.
 
 The `Notifications` workflow is the single manual delivery test for this
 repository. It sends its input to Discord and Telegram through the local
-`notify` action. The same workflow reports newly opened issues, and the final
-job in `CI` reports the completed CI result.
+`notify` action. The same workflow can report newly opened issues and pull
+requests, and the final job in `CI` reports the completed CI result.
+
+New issue and PR notifications are optional and disabled by default. Set the
+repository Actions variables `NOTIFY_ISSUES` and/or `NOTIFY_PULL_REQUESTS` to
+`true` to enable them here. Other repositories can call the reusable
+`.github/workflows/notify-events.yml` with independent `notify-issues` and
+`notify-pull-requests` boolean inputs, both defaulting to `false`.
+See the [caller workflow and template contract](notify/README.md#optional-notifications-for-new-issues-and-pull-requests).
 
 Configure these repository Actions secrets:
 
@@ -47,8 +54,8 @@ Configure these repository Actions secrets:
 | `TELEGRAM_BOT_TOKEN` | Token issued by BotFather |
 | `TELEGRAM_TARGETS` | JSON object with a target list, for example `{"targets":[{"chatId":"123456789"}]}` |
 
-Manual and issue delivery is required and fails visibly when configuration or
-delivery is invalid. CI delivery is best-effort so notification infrastructure
+Manual and enabled new-item delivery is required and fails visibly when
+configuration or delivery is invalid. CI delivery is best-effort so notification infrastructure
 cannot replace the actual CI result.
 
 ## Design guarantees
