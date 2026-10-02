@@ -135,6 +135,7 @@ selection.
 | `branch-created` | Resolve an issue from the branch name, transition it, and optionally link the branch. |
 | `pull-request` | Resolve linked issues from branch/title/body and apply opened or merged transitions. |
 | `release-published` | Select issues with `all`/`any`/`not` and apply the release transition. |
+| `release-completed` | Apply the same configured release transition after a successful publish/deploy job, without requiring another workflow event. |
 | `comment-event` | Handle allowed issue-author, assignee, or discussion-author comments. |
 | `label-event` | React to labeled/unlabeled events for issues, pull requests, and discussions. |
 | `apply` | Apply an explicit transition to explicit target numbers and target kind. |
@@ -143,6 +144,42 @@ selection.
 Issue and pull request transitions use one `setLabels` request per target so
 unrelated labels from the preflight snapshot are preserved. Discussion labels
 use GitHub GraphQL mutations.
+
+### Releases created by CI
+
+Releases created with `GITHUB_TOKEN` do not trigger a second release workflow.
+Call `release-completed` in a dependent job only after **all** publication or
+deployment prerequisites succeed. It accepts `push` and `workflow_dispatch`
+on tags or the repository default branch, never pull request events. Configuration
+must come from the default branch through the API (`config-source: api`, with
+no `config-ref` override). It reuses `events.releasePublished`, including the
+selector, semantic names, dry-run and bulk guards. It does not create releases
+or independently verify publication: the caller's successful job dependency
+is the publication contract.
+
+```yaml
+  complete-issues:
+    needs: [publish]
+    if: needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    concurrency:
+      group: labels-${{ github.repository }}
+      cancel-in-progress: false
+    steps:
+      - uses: ziqq/actions/labeler@<immutable-commit-sha>
+        with:
+          operation: release-completed
+          github-token: ${{ github.token }}
+          allow-empty: 'true'
+          allow-pattern-removal: 'true'
+```
+
+Serialize this job with other label jobs using the same concurrency group.
+Failed, skipped or cancelled publication jobs must not complete issues. The
+regular `release-published` operation still handles manually published releases.
 
 ## Label and discussion hooks
 

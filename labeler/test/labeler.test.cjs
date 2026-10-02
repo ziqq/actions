@@ -214,3 +214,96 @@ test('issue references are parsed without duplicates', () => {
   assert.deepEqual(labeler.closingIssueNumbers(loaded.config, 'Fixes #2 and closes #2; fixed #3'), [2, 3]);
   assert.deepEqual(labeler.parseTargetNumbers('3, 2,3'), [3, 2]);
 });
+
+function releaseFixture(overrides = {}, issues) {
+  const loaded = labeler.parseConfig(config());
+  const inputs = labeler.buildInputs({
+    INPUT_OPERATION: 'release-completed',
+    'INPUT_ALLOW-EMPTY': 'true',
+    'INPUT_ALLOW-PATTERN-REMOVAL': 'true',
+    ...overrides,
+  });
+  const issue = {
+    number: 42,
+    labels: ['Queue for publication', 'Currently building', 'customer-label'],
+  };
+  const mutations = [];
+  let reads = 0;
+  const paginate = async () => [...loaded.labels.values()];
+  paginate.iterator = async function* () {
+    reads += 1;
+    yield { data: issues ?? [issue, { ...issue, number: 43, pull_request: {} }] };
+  };
+  const client = {
+    paginate,
+    rest: { issues: {
+      listForRepo: {},
+      listLabelsForRepo: {},
+      get: async () => ({ data: issue }),
+      setLabels: async (request) => mutations.push(request),
+    } },
+  };
+  const context = {
+    eventName: 'push',
+    ref: 'refs/tags/v1.0.0',
+    repo: { owner: 'owner', repo: 'repo' },
+    payload: { repository: { default_branch: 'main' } },
+  };
+  return { client, context, inputs, loaded, result: labeler.createResult(inputs, loaded), mutations, reads: () => reads };
+}
+
+test('CI release completion applies semantic selector and preserves unrelated labels', async () => {
+  const fixture = releaseFixture();
+  await labeler.execute(fixture);
+  assert.equal(fixture.mutations.length, 1);
+  assert.deepEqual(fixture.mutations[0].labels, ['customer-label', 'Shipped anywhere']);
+  assert.equal(fixture.mutations[0].issue_number, 42);
+  assert.equal(fixture.result.transition, 'finish');
+});
+
+test('release completion supports trusted dispatch, dry run, empty and bulk guards', async () => {
+  const dispatch = releaseFixture({ 'INPUT_DRY-RUN': 'true' });
+  dispatch.context.eventName = 'workflow_dispatch';
+  dispatch.context.ref = 'refs/heads/main';
+  await labeler.execute(dispatch);
+  assert.equal(dispatch.result.targets.length, 1);
+  assert.equal(dispatch.mutations.length, 0);
+  const empty = releaseFixture({}, []);
+  await labeler.execute(empty);
+  assert.deepEqual(empty.result.targets, []);
+  const bulk = releaseFixture({ 'INPUT_MAX-TARGETS': '1' }, [
+    { number: 1, labels: ['Queue for publication', 'Currently building'] },
+    { number: 2, labels: ['Queue for publication', 'Currently building'] },
+  ]);
+  await assert.rejects(labeler.execute(bulk), /exceeds max-targets/);
+  assert.equal(bulk.mutations.length, 0);
+});
+
+test('release completion rejects PR events and untrusted branches before issue reads', async () => {
+  for (const eventName of ['pull_request', 'pull_request_target', 'workflow_run', 'issues']) {
+    const fixture = releaseFixture();
+    fixture.context.eventName = eventName;
+    await labeler.execute(fixture);
+    assert.equal(fixture.reads(), 0);
+    assert.equal(fixture.mutations.length, 0);
+  }
+  const branch = releaseFixture();
+  branch.context.ref = 'refs/heads/feature/test';
+  await labeler.execute(branch);
+  assert.equal(branch.reads(), 0);
+  for (const overrides of [{ 'INPUT_CONFIG-SOURCE': 'workspace' }, { 'INPUT_CONFIG-REF': 'feature/test' }]) {
+    const fixture = releaseFixture(overrides);
+    await assert.rejects(labeler.execute(fixture), /requires API configuration/);
+    assert.equal(fixture.reads(), 0);
+  }
+});
+
+test('release-published still requires a real published release event', async () => {
+  const fixture = releaseFixture({ INPUT_OPERATION: 'release-published' });
+  await labeler.execute(fixture);
+  assert.equal(fixture.reads(), 0);
+  fixture.context.eventName = 'release';
+  fixture.context.payload.action = 'published';
+  await labeler.execute(fixture);
+  assert.equal(fixture.mutations.length, 1);
+});

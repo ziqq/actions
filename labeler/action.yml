@@ -3,7 +3,7 @@ description: Synchronize labels and apply guarded lifecycle transitions through 
 
 inputs:
   operation:
-    description: "sync-labels, path-labels, branch-created, pull-request, release-published, comment-event, label-event, or apply."
+    description: "sync-labels, path-labels, branch-created, pull-request, release-published, release-completed, comment-event, label-event, or apply."
     required: true
   github-token:
     description: Repository-scoped GitHub token.

@@ -17,6 +17,11 @@ hardening decisions implemented here.
 Consumers should pin an immutable full commit SHA. Version tags are provided
 for discovery, but a full SHA gives the strongest supply-chain boundary.
 
+For releases or deployments completed inside CI, call labeler's
+[`release-completed`](labeler/README.md#releases-created-by-ci) operation after
+successful publication. It uses the repository's semantic release selector
+without relying on another event from `GITHUB_TOKEN`.
+
 ## Runtime and development
 
 Both actions use the GitHub-hosted Node 24 runtime. Dependencies are bundled

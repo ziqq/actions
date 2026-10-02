@@ -13,6 +13,7 @@ const OPERATIONS = new Set([
   'label-event',
   'path-labels',
   'pull-request',
+  'release-completed',
   'release-published',
   'sync-labels',
 ]);
@@ -928,9 +929,18 @@ async function releaseTargets({ client, context, inputs, loaded, event }) {
 async function handleReleasePublished(args) {
   const { client, context, inputs, loaded, result } = args;
   const event = loaded.events.get('releasePublished');
-  if (!event || context.eventName !== 'release' || context.payload.action !== 'published') {
+  const completed = inputs.operation === 'release-completed';
+  const defaultRef = `refs/heads/${context.payload.repository?.default_branch}`;
+  const trustedRef = context.ref?.startsWith('refs/tags/') || context.ref === defaultRef;
+  const applicable = completed
+    ? ['push', 'workflow_dispatch'].includes(context.eventName) && trustedRef
+    : context.eventName === 'release' && context.payload.action === 'published';
+  if (!event || !applicable) {
     result.skipped.push({ reason: 'release-event-not-configured-or-not-applicable' });
     return;
+  }
+  if (completed && (inputs.configSource !== 'api' || inputs.configRef)) {
+    fail('release-completed requires API configuration from the repository default branch.');
   }
   const descriptors = await releaseTargets({ client, context, event, inputs, loaded });
   await applyTransitionToTargets({ ...args, descriptors, transitionId: event.transition });
@@ -1113,6 +1123,7 @@ async function execute({ client, context, inputs, loaded, result }) {
       await handlePullRequest(args);
       break;
     case 'release-published':
+    case 'release-completed':
       await handleReleasePublished(args);
       break;
     case 'comment-event':
@@ -1170,7 +1181,9 @@ export {
   branchIssueNumber,
   buildInputs,
   closingIssueNumbers,
+  createResult,
   enforceTargetCount,
+  execute,
   matchesSelector,
   parseConfig,
   parseTargetNumbers,
