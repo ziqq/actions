@@ -57,6 +57,12 @@ permissions:
 
 jobs:
   notify:
+    # Skip items opened by the repository owner; remove to notify for everyone.
+    if: >-
+      (github.event_name == 'issues' &&
+      github.event.issue.user.login != github.repository_owner) ||
+      (github.event_name == 'pull_request_target' &&
+      github.event.pull_request.user.login != github.repository_owner)
     uses: ziqq/actions/.github/workflows/notify-events.yml@FULL_COMMIT_SHA
     with:
       notify-issues: true

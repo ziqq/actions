@@ -56,7 +56,11 @@ jobs:
           telegram-targets: ${{ env.NOTIFY_TELEGRAM_TARGETS }}
 
   new-items:
-    if: github.event_name == 'issues' || github.event_name == 'pull_request_target'
+    if: >-
+      (github.event_name == 'issues' &&
+      github.event.issue.user.login != github.repository_owner) ||
+      (github.event_name == 'pull_request_target' &&
+      github.event.pull_request.user.login != github.repository_owner)
     uses: ./.github/workflows/notify-events.yml
     with:
       notify-issues: ${{ vars.NOTIFY_ISSUES == 'true' }}

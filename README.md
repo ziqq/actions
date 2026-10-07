@@ -46,7 +46,8 @@ requests, and the final job in `CI` reports the completed CI result.
 
 New issue and PR notifications are optional and disabled by default. Set the
 repository Actions variables `NOTIFY_ISSUES` and/or `NOTIFY_PULL_REQUESTS` to
-`true` to enable them here. Other repositories can call the reusable
+`true` to enable them here; items opened by the repository owner are skipped.
+Other repositories can call the reusable
 `.github/workflows/notify-events.yml` with independent `notify-issues` and
 `notify-pull-requests` boolean inputs, both defaulting to `false`.
 See the [caller workflow and template contract](notify/README.md#optional-notifications-for-new-issues-and-pull-requests).
